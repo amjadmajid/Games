@@ -19,12 +19,12 @@ CELL = 16 # all moves will be CELL based
 GAP = 1
 
 class Grid:
-    def __init__(s, w=60, h=30, cell=CELL):
+    def __init__(s, w=640, h=480, cell=CELL):
         s.cell_size = cell
-        s.width = w * cell
-        s.height = h * cell
-        s.h_vertices = range(0, s.width, s.cell_size) 
-        s.v_vertices = range(0, s.height, s.cell_size)
+        s.width = (w // cell) * cell  # make the width multiple of the cell size
+        s.height = (h // cell) * cell
+        s.x_vertices = range(0, s.width, s.cell_size) 
+        s.y_vertices = range(0, s.height, s.cell_size)
 
 class Vertex:
     '''a vertex represents the top left corner of a square'''
@@ -45,10 +45,11 @@ class Vertex:
         return f'Vertex{s.x, s.y}'
 
 class Direction():
-    RIGHT = Vertex(CELL, 0)
-    LEFT  = Vertex(-CELL, 0)
-    DOWN  = Vertex(0, CELL)
-    UP    = Vertex(0, -CELL)
+    def __init__(s, cell_size):
+        s.RIGHT = Vertex(cell_size, 0)
+        s.LEFT  = Vertex(-cell_size, 0)
+        s.DOWN  = Vertex(0, cell_size)
+        s.UP    = Vertex(0, -cell_size)
 
 class Snake:
     def __init__(s, grid):
@@ -56,16 +57,17 @@ class Snake:
         s.h = grid.height 
         s.cz = grid.cell_size
         s.grid = grid
+        s.direction = Direction(s.cz)
 
         # set initial game state
-        s.step = Direction.RIGHT
         s.head =  Vertex(s.w//2, s.h//2)
         s.snake = [s.head, s.head - Vertex(s.cz, 0) , s.head - Vertex(2*s.cz, 0)]
+        s.step = s.direction.RIGHT
         s.score = 0 
         s.food = s._gen_food()
 
     def _gen_food(s):
-        food_v = Vertex( random.choice(s.grid.h_vertices),  random.choice(s.grid.v_vertices))
+        food_v = Vertex( random.choice(s.grid.x_vertices),  random.choice(s.grid.y_vertices))
         print(food_v)
         if food_v in s.snake:
             # if food_v is on the snake generate a new food_v
@@ -82,13 +84,13 @@ class Snake:
             # check if a key is pressed 
             if event.type == pygame.KEYDOWN:
                 if event.key == pygame.K_LEFT:
-                    s.step = Direction.LEFT
+                    s.step = s.direction.LEFT
                 elif event.key == pygame.K_RIGHT:
-                    s.step = Direction.RIGHT
+                    s.step = s.direction.RIGHT
                 elif event.key == pygame.K_DOWN:
-                    s.step = Direction.DOWN
+                    s.step = s.direction.DOWN
                 elif event.key == pygame.K_UP:
-                    s.step = Direction.UP
+                    s.step = s.direction.UP
     
     def move_snake(s):
         s._handle_user_input()
@@ -96,14 +98,6 @@ class Snake:
         s.snake.insert(0, snake.head)
         if not snake.there_is_food():
             snake.snake.pop()   
-
-    def snake_died(s):
-        died =False
-        if s.head.x > s.grid.h_vertices[-1]  or s.head.y > s.grid.v_vertices[-1]  or s.head.x < 0 or s.head.y < 0 :
-            died  = True
-        elif s.head in s.snake[1:]:
-            died  = True
-        return died  
 
     def there_is_food(s):
         if s.head == s.food:
@@ -113,19 +107,27 @@ class Snake:
             return True
         return False 
 
+    def snake_died(s):
+        died =False
+        if s.head.x > s.grid.x_vertices[-1]  or s.head.y > s.grid.y_vertices[-1]  or s.head.x < 0 or s.head.y < 0 :
+            died  = True
+        elif s.head in s.snake[1:]:
+            died  = True
+        return died  
+
 class Window:
     def __init__(s, grid, snake):
         s.snake = snake   
+        s.grid = grid
         s.cz = grid.cell_size    
         s.w = grid.width
         s.h = grid.height
-        s.grid = grid
         s.display = pygame.display.set_mode((s.w, s.h ))
         s.clock = pygame.time.Clock()
 
     def draw_grid(s, vertex=False):
-        for i in s.grid.h_vertices:
-            for j in s.grid.v_vertices:
+        for i in s.grid.x_vertices:
+            for j in s.grid.y_vertices:
                 rect = (i, j, s.cz-1, s.cz-1)
                 pygame.draw.rect(s.display, (BLACK), rect)
                 if vertex:
@@ -157,12 +159,3 @@ if __name__ == '__main__':
     print('Game is over!')
     pygame.quit()
     quit()
-
-    
-
-            
-
-
-
-        
-        
